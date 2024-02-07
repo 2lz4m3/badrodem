@@ -4,14 +4,19 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
+	"slices"
+	"strings"
 
 	"github.com/manifoldco/promptui"
 )
 
 const (
-	YES = "Yes"
-	NO  = "No"
+	YES             = "Yes"
+	NO              = "No"
+	YES_ALL         = "Yes, all"
+	TEXT_FILES_ONLY = "Text file(s) only"
 )
 
 var (
@@ -22,6 +27,13 @@ func panicOnError(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func isProbablyText(b []byte) bool {
+	s := strings.TrimRight(string(b), string(0))
+	bytes := []byte(s)
+	mimeType := http.DetectContentType(bytes)
+	return strings.HasPrefix(mimeType, "text/")
 }
 
 func addBom(filePath string) error {
@@ -64,20 +76,82 @@ func main() {
 		panicOnError(err)
 	}
 
-	label := fmt.Sprintf("Are you sure you want to add a BOM to %d file(s)? [Yes/No]", len(os.Args[1:]))
+	filePathArgs := os.Args[1:]
+	slices.Sort(filePathArgs)
+	filePathArgsUnique := slices.Compact(filePathArgs)
+	log.Printf("%v", filePathArgsUnique)
 
-	prompt := promptui.Select{
-		Label: label,
-		Items: []string{YES, NO},
+	var textFilePaths []string
+	var nonTextFilePaths []string
+
+	for _, filePath := range filePathArgsUnique {
+		f, err := os.Open(filePath)
+		if err != nil {
+			log.Printf("can not open file: %v", err)
+			continue
+		}
+		defer f.Close()
+		first512bytes := make([]byte, 512)
+		_, err = f.Read(first512bytes)
+		if err != nil {
+			log.Printf("can not read file: %v", err)
+			continue
+		}
+		if !isProbablyText(first512bytes) {
+			nonTextFilePaths = append(nonTextFilePaths, filePath)
+			continue
+		}
+		textFilePaths = append(textFilePaths, filePath)
 	}
+
+	var filePaths []string
+	if len(nonTextFilePaths) > 0 {
+		filePaths = append(textFilePaths, nonTextFilePaths...)
+	} else {
+		filePaths = textFilePaths
+	}
+
+	if len(filePaths) == 0 {
+		err := fmt.Errorf("no file path(s)")
+		panicOnError(err)
+	}
+
+	var label string
+	var prompt promptui.Select
+	if len(nonTextFilePaths) > 0 {
+		if len(textFilePaths) > 0 {
+			label = fmt.Sprintf("There are %d non-text file(s). Are you sure you want to add a BOM to all %d file(s) anyway?", len(nonTextFilePaths), len(filePaths))
+			prompt = promptui.Select{
+				Label: label,
+				Items: []string{NO, TEXT_FILES_ONLY, YES_ALL},
+			}
+		} else {
+			label = fmt.Sprintf("There are %d non-text file(s). Are you sure you want to add a BOM to all %d file(s) anyway?", len(nonTextFilePaths), len(filePaths))
+			prompt = promptui.Select{
+				Label: label,
+				Items: []string{NO, YES},
+			}
+		}
+	} else {
+		label = fmt.Sprintf("Are you sure you want to add a BOM to %d file(s)?", len(filePaths))
+		prompt = promptui.Select{
+			Label: label,
+			Items: []string{YES, NO},
+		}
+	}
+
 	_, result, err := prompt.Run()
 	panicOnError(err)
 
-	if result != YES {
+	if result == NO {
 		os.Exit(0)
 	}
 
-	for i, a := range os.Args[1:] {
+	if result == TEXT_FILES_ONLY {
+		filePaths = textFilePaths
+	}
+
+	for i, a := range filePaths {
 		filePath := a
 		err := addBom(filePath)
 		if err != nil {
