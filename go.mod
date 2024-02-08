@@ -1,4 +1,4 @@
-module github.com/2lz4m3/bom-adder
+module badrodem
 
 go 1.21.6
 
