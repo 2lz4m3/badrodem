@@ -16,7 +16,7 @@ const (
 	YES             = "Yes"
 	NO              = "No"
 	YES_ALL         = "Yes, all"
-	TEXT_FILES_ONLY = "Text file(s) only"
+	TEXT_FILES_ONLY = "Text files only"
 )
 
 var (
@@ -116,27 +116,28 @@ func main() {
 		panicOnError(err)
 	}
 
+	fmt.Printf(`Your pick:
+      text files: %d
+  non-text files: %d
+`, len(textFilePaths), len(nonTextFilePaths))
+
 	var label string
 	var prompt promptui.Select
 	if len(nonTextFilePaths) > 0 {
+		label = "Are you sure you want to add a BOM to ALL files anyway?"
+		items := []string{NO, YES}
 		if len(textFilePaths) > 0 {
-			label = fmt.Sprintf("There are %d non-text file(s). Are you sure you want to add a BOM to all %d file(s) anyway?", len(nonTextFilePaths), len(filePaths))
-			prompt = promptui.Select{
-				Label: label,
-				Items: []string{NO, TEXT_FILES_ONLY, YES_ALL},
-			}
-		} else {
-			label = fmt.Sprintf("There are %d non-text file(s). Are you sure you want to add a BOM to all %d file(s) anyway?", len(nonTextFilePaths), len(filePaths))
-			prompt = promptui.Select{
-				Label: label,
-				Items: []string{NO, YES},
-			}
+			items = []string{NO, TEXT_FILES_ONLY, YES_ALL}
 		}
-	} else {
-		label = fmt.Sprintf("Are you sure you want to add a BOM to %d file(s)?", len(filePaths))
 		prompt = promptui.Select{
 			Label: label,
-			Items: []string{YES, NO},
+			Items: items,
+		}
+	} else {
+		label = "Are you sure you want to add a BOM to ALL files?"
+		prompt = promptui.Select{
+			Label: label,
+			Items: []string{NO, YES},
 		}
 	}
 
