@@ -92,14 +92,14 @@ func main() {
 	for _, filePath := range filePathArgsUnique {
 		f, err := os.Open(filePath)
 		if err != nil {
-			log.Printf("can not open file: %v", err)
+			log.Printf("can not open file: %s %v", filePath, err)
 			continue
 		}
 		defer f.Close()
 		first512bytes := make([]byte, 512)
 		_, err = f.Read(first512bytes)
 		if err != nil {
-			log.Printf("can not read file: %v", err)
+			log.Printf("can not read file: %s %v", filePath, err)
 			continue
 		}
 		if !isProbablyText(first512bytes) {
@@ -117,7 +117,7 @@ func main() {
 	}
 
 	if len(filePaths) == 0 {
-		err := fmt.Errorf("no file path(s)")
+		err := fmt.Errorf("no files picked")
 		panicOnError(err)
 	}
 
@@ -157,11 +157,13 @@ func main() {
 		filePaths = textFilePaths
 	}
 
-	for i, a := range filePaths {
+	for _, a := range filePaths {
 		filePath := a
 		err := addBom(filePath)
 		if err != nil {
-			log.Printf("error occurred at #%d: %v\n", i, err)
+			log.Printf("skipped: %s %v", filePath, err)
+			continue
 		}
+		fmt.Printf("BOM added: %s\n", filePath)
 	}
 }
