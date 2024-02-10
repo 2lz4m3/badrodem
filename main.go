@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"unicode/utf8"
@@ -83,13 +84,19 @@ func main() {
 	}
 
 	filePathArgs := os.Args[1:]
-	slices.Sort(filePathArgs)
-	filePathArgsUnique := slices.Compact(filePathArgs)
+	var filePathsClean []string
+	for _, filePathArg := range filePathArgs {
+		filePathClean := filepath.Clean(filePathArg)
+		filePathsClean = append(filePathsClean, filePathClean)
+	}
+
+	slices.Sort(filePathsClean)
+	filePathsUnique := slices.Compact(filePathsClean)
 
 	var textFilePaths []string
 	var nonTextFilePaths []string
 
-	for _, filePath := range filePathArgsUnique {
+	for _, filePath := range filePathsUnique {
 		f, err := os.Open(filePath)
 		if err != nil {
 			log.Printf("can not open file: %s %v", filePath, err)
