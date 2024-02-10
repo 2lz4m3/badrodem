@@ -162,7 +162,7 @@ func main() {
 			Items: items,
 		}
 	} else {
-		label = "Are you sure you want to add a BOM to ALL files?"
+		label = "Add a BOM to ALL files?"
 		prompt = promptui.Select{
 			Label: label,
 			Items: []string{NO, YES},
