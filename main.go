@@ -7,11 +7,17 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"unicode/utf8"
 
 	"github.com/manifoldco/promptui"
+)
+
+const (
+	EXIT_CODE_OK = iota
+	EXIT_CODE_ERROR
 )
 
 const (
@@ -25,9 +31,19 @@ var (
 	bom = []byte{0xEF, 0xBB, 0xBF}
 )
 
+func exit(code int) {
+	if runtime.GOOS == "windows" && !isDoubleClickRun() {
+		// keep console open on exit
+		fmt.Print("Press any key to continue . . .")
+		os.Stdin.Read(make([]byte, 1))
+	}
+	os.Exit(code)
+}
+
 func panicOnError(err error) {
 	if err != nil {
-		log.Fatal(err)
+		fmt.Fprintln(os.Stderr, err)
+		exit(EXIT_CODE_ERROR)
 	}
 }
 
@@ -157,7 +173,7 @@ func main() {
 	panicOnError(err)
 
 	if result == NO {
-		os.Exit(0)
+		exit(EXIT_CODE_OK)
 	}
 
 	if result == TEXT_FILES_ONLY {
@@ -173,4 +189,6 @@ func main() {
 		}
 		fmt.Printf("BOM added: %s\n", filePath)
 	}
+
+	exit(EXIT_CODE_OK)
 }
