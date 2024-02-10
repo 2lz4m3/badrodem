@@ -1,7 +1,7 @@
 //go:build !windows
 
-package main
+package platform
 
-func isDoubleClickRun() bool {
+func IsDoubleClickRun() bool {
 	return false
 }

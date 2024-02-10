@@ -1,6 +1,7 @@
 package main
 
 import (
+	"badrodem/platform"
 	"bytes"
 	"fmt"
 	"log"
@@ -32,7 +33,7 @@ var (
 )
 
 func exit(code int) {
-	if runtime.GOOS == "windows" && isDoubleClickRun() {
+	if runtime.GOOS == "windows" && platform.IsDoubleClickRun() {
 		// keep console open on exit
 		fmt.Print("Press any key to continue . . .")
 		os.Stdin.Read(make([]byte, 1))

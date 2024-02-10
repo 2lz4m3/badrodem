@@ -1,6 +1,6 @@
 //go:build windows
 
-package main
+package platform
 
 import (
 	"syscall"
@@ -8,7 +8,7 @@ import (
 )
 
 // from https://gist.github.com/yougg/213250cc04a52e2b853590b06f49d865
-func isDoubleClickRun() bool {
+func IsDoubleClickRun() bool {
 	kernel32 := syscall.NewLazyDLL("kernel32.dll")
 	lp := kernel32.NewProc("GetConsoleProcessList")
 	if lp != nil {
