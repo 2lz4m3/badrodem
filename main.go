@@ -8,6 +8,7 @@ import (
 	"os"
 	"slices"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/manifoldco/promptui"
 )
@@ -45,6 +46,11 @@ func addBom(filePath string) error {
 
 	if bytes.Equal(b[0:3], bom) {
 		err := fmt.Errorf("already has a BOM")
+		return err
+	}
+
+	if !utf8.Valid(b) {
+		err := fmt.Errorf("not valid UTF-8 encoded")
 		return err
 	}
 
