@@ -2,8 +2,10 @@ package main
 
 import (
 	"badrodem/platform"
+	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -14,6 +16,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/manifoldco/promptui"
+	"github.com/spkg/bom"
 )
 
 const (
@@ -26,10 +29,11 @@ const (
 	NO              = "No"
 	YES_ALL         = "Yes, all"
 	TEXT_FILES_ONLY = "Text files only"
+	REMOVE_BOM      = "Remove BOM"
 )
 
 var (
-	bom = []byte{0xEF, 0xBB, 0xBF}
+	bomBytes = []byte{0xEF, 0xBB, 0xBF}
 )
 
 func exit(code int) {
@@ -62,7 +66,7 @@ func addBom(filePath string) error {
 		return err
 	}
 
-	if bytes.Equal(b[0:3], bom) {
+	if bytes.Equal(b[0:3], bomBytes) {
 		err := fmt.Errorf("already has a BOM")
 		return err
 	}
@@ -79,11 +83,44 @@ func addBom(filePath string) error {
 	}
 	defer f.Close()
 
-	_, err = f.Write(bom)
+	_, err = f.Write(bomBytes)
 	if err != nil {
 		err := fmt.Errorf("can not write file: %w", err)
 		return err
 	}
+
+	_, err = f.Write(b)
+	if err != nil {
+		err := fmt.Errorf("can not write file: %w", err)
+		return err
+	}
+
+	return nil
+}
+
+func removeBom(filePath string) error {
+	f, err := os.Open(filePath)
+	if err != nil {
+		err := fmt.Errorf("can not open file: %w", err)
+		return err
+	}
+	defer f.Close()
+
+	r := bufio.NewReader(f)
+	br := bom.NewReader(r)
+
+	b, err := io.ReadAll(br)
+	if err != nil {
+		err := fmt.Errorf("can not read file: %w", err)
+		return err
+	}
+
+	f, err = os.Create(filePath)
+	if err != nil {
+		err := fmt.Errorf("can not open file: %w", err)
+		return err
+	}
+	defer f.Close()
 
 	_, err = f.Write(b)
 	if err != nil {
@@ -156,7 +193,7 @@ func main() {
 		label = "Are you sure you want to add a BOM to ALL files anyway?"
 		items := []string{NO, YES}
 		if len(textFilePaths) > 0 {
-			items = []string{NO, TEXT_FILES_ONLY, YES_ALL}
+			items = []string{NO, TEXT_FILES_ONLY, YES_ALL, REMOVE_BOM}
 		}
 		prompt = promptui.Select{
 			Label: label,
@@ -166,7 +203,7 @@ func main() {
 		label = "Add a BOM to ALL files?"
 		prompt = promptui.Select{
 			Label: label,
-			Items: []string{NO, YES},
+			Items: []string{YES, REMOVE_BOM, NO},
 		}
 	}
 
@@ -183,12 +220,21 @@ func main() {
 
 	for _, a := range filePaths {
 		filePath := a
-		err := addBom(filePath)
+		var err error
+		if result == REMOVE_BOM {
+			err = removeBom(filePath)
+		} else {
+			err = addBom(filePath)
+		}
 		if err != nil {
 			log.Printf("skipped: %s %v", filePath, err)
 			continue
 		}
-		fmt.Printf("BOM added: %s\n", filePath)
+		if result == REMOVE_BOM {
+			fmt.Printf("BOM removed: %s\n", filePath)
+		} else {
+			fmt.Printf("BOM added: %s\n", filePath)
+		}
 	}
 
 	exit(EXIT_CODE_OK)
