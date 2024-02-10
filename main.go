@@ -85,7 +85,6 @@ func main() {
 	filePathArgs := os.Args[1:]
 	slices.Sort(filePathArgs)
 	filePathArgsUnique := slices.Compact(filePathArgs)
-	log.Printf("%v", filePathArgsUnique)
 
 	var textFilePaths []string
 	var nonTextFilePaths []string
