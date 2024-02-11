@@ -9,5 +9,5 @@ It adds an UTF-8 [BOM](https://en.wikipedia.org/wiki/Byte_order_mark) (Byte Orde
 ## Usage
 
 ```
-badrodem [file ...]
+badrodem <file>...
 ```

@@ -1,4 +1,4 @@
-package main
+package run
 
 import (
 	"badrodem/platform"
@@ -20,11 +20,6 @@ import (
 )
 
 const (
-	EXIT_CODE_OK = iota
-	EXIT_CODE_ERROR
-)
-
-const (
 	YES             = "Yes"
 	NO              = "No"
 	YES_ALL         = "Yes, all"
@@ -43,13 +38,6 @@ func exit(code int) {
 		os.Stdin.Read(make([]byte, 1))
 	}
 	os.Exit(code)
-}
-
-func panicOnError(err error) {
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		exit(EXIT_CODE_ERROR)
-	}
 }
 
 func isProbablyText(b []byte) bool {
@@ -131,10 +119,10 @@ func removeBom(filePath string) error {
 	return nil
 }
 
-func main() {
+func Run() error {
 	if len(os.Args) <= 1 {
 		err := fmt.Errorf("one or more arguments are required")
-		panicOnError(err)
+		return err
 	}
 
 	filePathArgs := os.Args[1:]
@@ -160,7 +148,11 @@ func main() {
 		first512bytes := make([]byte, 512)
 		_, err = f.Read(first512bytes)
 		if err != nil {
-			log.Printf("can not read file: %s %v", filePath, err)
+			if err == io.EOF {
+				log.Printf("empty file: %s %v", filePath, err)
+			} else {
+				log.Printf("can not read file: %s %v", filePath, err)
+			}
 			continue
 		}
 		if !isProbablyText(first512bytes) {
@@ -179,7 +171,7 @@ func main() {
 
 	if len(filePaths) == 0 {
 		err := fmt.Errorf("no files picked")
-		panicOnError(err)
+		return err
 	}
 
 	fmt.Printf(`Your pick:
@@ -208,10 +200,12 @@ func main() {
 	}
 
 	_, result, err := prompt.Run()
-	panicOnError(err)
+	if err != nil {
+		return err
+	}
 
 	if result == NO {
-		exit(EXIT_CODE_OK)
+		return nil
 	}
 
 	if result == TEXT_FILES_ONLY {
@@ -237,5 +231,5 @@ func main() {
 		}
 	}
 
-	exit(EXIT_CODE_OK)
+	return nil
 }
