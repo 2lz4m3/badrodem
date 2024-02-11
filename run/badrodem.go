@@ -1,7 +1,6 @@
 package run
 
 import (
-	"badrodem/platform"
 	"bufio"
 	"bytes"
 	"fmt"
@@ -10,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime"
 	"slices"
 	"strings"
 	"unicode/utf8"
@@ -30,15 +28,6 @@ const (
 var (
 	bomBytes = []byte{0xEF, 0xBB, 0xBF}
 )
-
-func exit(code int) {
-	if runtime.GOOS == "windows" && platform.IsDoubleClickRun() {
-		// keep console open on exit
-		fmt.Print("Press any key to continue . . .")
-		os.Stdin.Read(make([]byte, 1))
-	}
-	os.Exit(code)
-}
 
 func isProbablyText(b []byte) bool {
 	s := strings.TrimRight(string(b), string(0))

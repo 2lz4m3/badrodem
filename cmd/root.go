@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"badrodem/platform"
 	"badrodem/run"
+	"fmt"
 	"os"
+	"runtime"
 
 	"github.com/spf13/cobra"
 )
@@ -21,6 +24,11 @@ to the beginning of the text file.`,
 
 func Execute() {
 	err := rootCmd.Execute()
+	if runtime.GOOS == "windows" && platform.IsDoubleClickRun() {
+		// keep console open on exit
+		fmt.Print("Press any key to continue . . .")
+		os.Stdin.Read(make([]byte, 1))
+	}
 	if err != nil {
 		os.Exit(1)
 	}
