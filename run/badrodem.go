@@ -30,7 +30,7 @@ var (
 )
 
 func isProbablyText(b []byte) bool {
-	s := strings.TrimRight(string(b), string(0))
+	s := strings.TrimRight(string(b), string(rune(0)))
 	bytes := []byte(s)
 	mimeType := http.DetectContentType(bytes)
 	return strings.HasPrefix(mimeType, "text/")
