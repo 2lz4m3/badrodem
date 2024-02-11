@@ -27,5 +27,6 @@ func Execute() {
 }
 
 func init() {
+	cobra.MousetrapHelpText = ""
 	rootCmd.DisableFlagsInUseLine = true
 }
