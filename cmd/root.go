@@ -22,7 +22,9 @@ to the beginning of the text file.`,
 	},
 }
 
-func Execute() {
+func Execute(versionString string) {
+	rootCmd.Version = versionString
+
 	err := rootCmd.Execute()
 	if runtime.GOOS == "windows" && platform.IsDoubleClickRun() {
 		// keep console open on exit
