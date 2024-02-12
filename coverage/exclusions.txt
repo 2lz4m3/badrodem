@@ -1,0 +1,3 @@
+badrodem/main.go
+badrodem/cmd/root.go
+badrodem/platform/nonwindows.go
