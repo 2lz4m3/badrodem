@@ -1,6 +1,7 @@
 package run
 
 import (
+	"badrodem/localize"
 	"bufio"
 	"bytes"
 	"fmt"
@@ -17,16 +18,14 @@ import (
 	"github.com/spkg/bom"
 )
 
-const (
-	YES             = "Yes"
-	NO              = "No"
-	YES_ALL         = "Yes, all"
-	TEXT_FILES_ONLY = "Text files only"
-	REMOVE_BOM      = "Remove BOM"
-)
-
 var (
 	bomBytes = []byte{0xEF, 0xBB, 0xBF}
+
+	itemYes           string
+	itemNo            string
+	itemYesAll        string
+	itemTextFilesOnly string
+	itemRemoveBOM     string
 )
 
 func isProbablyText(b []byte) bool {
@@ -39,36 +38,37 @@ func isProbablyText(b []byte) bool {
 func addBom(filePath string) error {
 	b, err := os.ReadFile(filePath)
 	if err != nil {
-		err := fmt.Errorf("can not open file: %w", err)
+		err := fmt.Errorf("%s: %w", localize.T("can_not_open_file"), err)
 		return err
 	}
 
 	if bytes.Equal(b[0:3], bomBytes) {
-		err := fmt.Errorf("already has a BOM")
+		err := fmt.Errorf(localize.T("already_has_a_bom"))
 		return err
 	}
 
 	if !utf8.Valid(b) {
-		err := fmt.Errorf("not valid UTF-8 encoded")
+		err := fmt.Errorf(localize.T("not_valid_utf-8_encoded"))
 		return err
 	}
 
 	f, err := os.Create(filePath)
 	if err != nil {
-		err := fmt.Errorf("can not open file: %w", err)
+		err := fmt.Errorf("%s: %w", localize.T("can_not_open_file"), err)
 		return err
 	}
 	defer f.Close()
 
+	// TODO: make these atomic
 	_, err = f.Write(bomBytes)
 	if err != nil {
-		err := fmt.Errorf("can not write file: %w", err)
+		err := fmt.Errorf("%s: %w", localize.T("can_not_write_file"), err)
 		return err
 	}
 
 	_, err = f.Write(b)
 	if err != nil {
-		err := fmt.Errorf("can not write file: %w", err)
+		err := fmt.Errorf("%s: %w", localize.T("can_not_write_file"), err)
 		return err
 	}
 
@@ -78,7 +78,7 @@ func addBom(filePath string) error {
 func removeBom(filePath string) error {
 	f, err := os.Open(filePath)
 	if err != nil {
-		err := fmt.Errorf("can not open file: %w", err)
+		err := fmt.Errorf("%s: %w", localize.T("can_not_open_file"), err)
 		return err
 	}
 	defer f.Close()
@@ -88,20 +88,20 @@ func removeBom(filePath string) error {
 
 	b, err := io.ReadAll(br)
 	if err != nil {
-		err := fmt.Errorf("can not read file: %w", err)
+		err := fmt.Errorf("%s: %w", localize.T("can_not_read_file"), err)
 		return err
 	}
 
 	f, err = os.Create(filePath)
 	if err != nil {
-		err := fmt.Errorf("can not open file: %w", err)
+		err := fmt.Errorf("%s: %w", localize.T("can_not_open_file"), err)
 		return err
 	}
 	defer f.Close()
 
 	_, err = f.Write(b)
 	if err != nil {
-		err := fmt.Errorf("can not write file: %w", err)
+		err := fmt.Errorf("%s: %w", localize.T("can_not_write_file"), err)
 		return err
 	}
 
@@ -110,7 +110,7 @@ func removeBom(filePath string) error {
 
 func Run() error {
 	if len(os.Args) <= 1 {
-		err := fmt.Errorf("one or more arguments are required")
+		err := fmt.Errorf(localize.T("one_or_more_arguments_are_required"))
 		return err
 	}
 
@@ -130,7 +130,7 @@ func Run() error {
 	for _, filePath := range filePathsUnique {
 		f, err := os.Open(filePath)
 		if err != nil {
-			log.Printf("can not open file: %s %v", filePath, err)
+			log.Printf("%s: %s %v", localize.T("can_not_open_file"), filePath, err)
 			continue
 		}
 		defer f.Close()
@@ -138,9 +138,9 @@ func Run() error {
 		_, err = f.Read(first512bytes)
 		if err != nil {
 			if err == io.EOF {
-				log.Printf("empty file: %s %v", filePath, err)
+				log.Printf("%s: %s %v", localize.T("file_is_empty"), filePath, err)
 			} else {
-				log.Printf("can not read file: %s %v", filePath, err)
+				log.Printf("%s: %s %v", localize.T("can_not_read_file"), filePath, err)
 			}
 			continue
 		}
@@ -159,32 +159,54 @@ func Run() error {
 	}
 
 	if len(filePaths) == 0 {
-		err := fmt.Errorf("no files picked")
+		err := fmt.Errorf(localize.T("no_files_picked"))
 		return err
 	}
 
-	fmt.Printf(`Your pick:
-      text files: %d
-  non-text files: %d
-`, len(textFilePaths), len(nonTextFilePaths))
+	fmt.Printf(`%s:
+%s: %d
+%s: %d
+`,
+		localize.T("your_pick"),
+		localize.T("text_files"), len(textFilePaths),
+		localize.T("non_text_files"), len(nonTextFilePaths),
+	)
+
+	itemYes = localize.T("item_yes")
+	itemNo = localize.T("item_no")
+	itemYesAll = localize.T("item_yes_all")
+	itemTextFilesOnly = localize.T("item_text_files_only")
+	itemRemoveBOM = localize.T("item_remove_bom")
 
 	var label string
 	var prompt promptui.Select
 	if len(nonTextFilePaths) > 0 {
-		label = "Are you sure you want to add a BOM to ALL files anyway?"
-		items := []string{NO, YES}
+		label = localize.T("are_you_sure_want_to_add_a_bom_to_all_files_anyway")
+		items := []string{
+			itemNo,
+			itemYes,
+		}
 		if len(textFilePaths) > 0 {
-			items = []string{NO, TEXT_FILES_ONLY, YES_ALL, REMOVE_BOM}
+			items = []string{
+				itemNo,
+				itemTextFilesOnly,
+				itemYesAll,
+				itemRemoveBOM,
+			}
 		}
 		prompt = promptui.Select{
 			Label: label,
 			Items: items,
 		}
 	} else {
-		label = "Add a BOM to ALL files?"
+		label = localize.T("add_a_bom_to_all_files")
 		prompt = promptui.Select{
 			Label: label,
-			Items: []string{YES, REMOVE_BOM, NO},
+			Items: []string{
+				itemYes,
+				itemRemoveBOM,
+				itemNo,
+			},
 		}
 	}
 
@@ -193,30 +215,30 @@ func Run() error {
 		return err
 	}
 
-	if result == NO {
+	if result == itemNo {
 		return nil
 	}
 
-	if result == TEXT_FILES_ONLY {
+	if result == itemTextFilesOnly {
 		filePaths = textFilePaths
 	}
 
 	for _, a := range filePaths {
 		filePath := a
 		var err error
-		if result == REMOVE_BOM {
+		if result == itemRemoveBOM {
 			err = removeBom(filePath)
 		} else {
 			err = addBom(filePath)
 		}
 		if err != nil {
-			log.Printf("skipped: %s %v", filePath, err)
+			log.Printf("%s: %v", localize.T("skipped"), err)
 			continue
 		}
-		if result == REMOVE_BOM {
-			fmt.Printf("BOM removed: %s\n", filePath)
+		if result == itemRemoveBOM {
+			fmt.Printf("%s: %s\n", localize.T("bom_removed"), filePath)
 		} else {
-			fmt.Printf("BOM added: %s\n", filePath)
+			fmt.Printf("%s: %s\n", localize.T("bom_added"), filePath)
 		}
 	}
 
