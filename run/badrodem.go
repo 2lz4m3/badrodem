@@ -59,12 +59,7 @@ func addBom(filePath string) error {
 	}
 	defer f.Close()
 
-	// TODO: make these atomic
-	_, err = f.Write(bomBytes)
-	if err != nil {
-		err := fmt.Errorf("%s: %w", localize.T("can_not_write_file"), err)
-		return err
-	}
+	b = append(bomBytes, b...)
 
 	_, err = f.Write(b)
 	if err != nil {
