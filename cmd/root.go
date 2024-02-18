@@ -21,7 +21,9 @@ var (
 It adds an UTF-8 BOM (Byte Order Mark, 0xEF 0xBB 0xBF)
 to the beginning of the text file.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Printf("Language: %s\n", localize.I18n.Tag)
+			if Verbose {
+				fmt.Printf("Language: %s\n", localize.I18n.Tag)
+			}
 			err := run.Run()
 			return err
 		},
