@@ -33,6 +33,7 @@ func main() {
 	} else {
 		tag = language.English
 	}
+	localize.I18n.Tag = tag
 
 	// set up localizer
 	localize.I18n.Bundle = i18n.NewBundle(tag)

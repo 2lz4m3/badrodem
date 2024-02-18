@@ -12,6 +12,8 @@ import (
 )
 
 var (
+	Verbose bool
+
 	rootCmd = &cobra.Command{
 		Use:   "badrodem <file>...",
 		Short: "An UTF-8 BOM adder.",
@@ -19,6 +21,7 @@ var (
 It adds an UTF-8 BOM (Byte Order Mark, 0xEF 0xBB 0xBF)
 to the beginning of the text file.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			fmt.Printf("Language: %s\n", localize.I18n.Tag)
 			err := run.Run()
 			return err
 		},
@@ -42,4 +45,6 @@ func Execute(versionString string) {
 func init() {
 	cobra.MousetrapHelpText = ""
 	rootCmd.DisableFlagsInUseLine = true
+
+	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "", false, "verbose output")
 }
